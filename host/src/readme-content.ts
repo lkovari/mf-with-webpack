@@ -4,7 +4,11 @@ export async function loadReadmeContent(): Promise<string> {
     if (!response.ok) {
       throw new Error('Failed to load README');
     }
-    const markdown = await response.text();
+    let markdown = await response.text();
+    
+    markdown = markdown.replace(/```\w*\n/g, '');
+    markdown = markdown.replace(/```/g, '');
+    
     return `<textarea id="readme-textarea" name="readme-textarea" readonly>${markdown}</textarea>`;
   } catch (error) {
     console.error('Error loading README:', error);

@@ -36,10 +36,10 @@ body {
 }
 
 #layout-header {
-  background: #bab1ee36;
-    color: #1a59b1;
+  background: #c1f1f436;
+    color: #471de0;
   padding: 1rem 2rem 0 2rem;
-  border-bottom: 3px solid #7fb3d5;
+  border-bottom: 1px solid #7fb3d5;
 }
 
 .header-content {

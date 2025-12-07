@@ -94,11 +94,11 @@ This will start:
 ### 3. Open in Browser
 
 **Host Application:** `http://localhost:8080`
-- Default view shows the README content in a grid-based layout
+- Default view shows the README content in a text area
 - Click **"Remote-A"** in the navigation to lazy load and display remote-a
 - Click **"Remote-B"** in the navigation to lazy load and display remote-b
 - Click **"Info"** to return to the README content
-- Footer displays the current date using lk-common-lib utilities
+- Footer displays the last updated date (manually configured) and current date using lk-common-lib utilities
 
 **Remote-A Standalone:** `http://localhost:8081`
 - View the remote-a module running independently
@@ -824,10 +824,10 @@ Supported formats: PNG, SVG, JPG, JPEG, GIF
 ```bash
 pnpm run serve:all
 # Open localhost:8080
-# Notice: commonLib is NOT loaded yet (check Network tab)
-# Click "Show Date & Info" → commonLib loads on demand
-# Click "Load Remote-A" → remote-a loads (which also uses commonLib)
-# Click "Load Remote-B" → remote-b loads (which also uses commonLib)
+# Notice: commonLib is loaded initially for the footer
+# Click "Remote-A" → remote-a loads (which also uses commonLib)
+# Click "Remote-B" → remote-b loads (which also uses commonLib)
+# Click "Info" → returns to README display
 ```
 
 ### 2. Multiple Remotes Demo
@@ -873,7 +873,8 @@ mf-with-webpack/
 │   └── src/
 │       ├── index.ts            # Host entry point (with lazy loading)
 │       ├── main-layout.ts      # CSS grid-based layout (header, body, footer)
-│       ├── readme-content.ts   # README content loader and markdown converter
+│       ├── readme-content.ts   # README content loader (displays as plain text)
+│       ├── config.ts           # Application configuration (last updated date)
 │       └── styles.css          # Application styles
 ├── remote-a/
 │   ├── index.html              # Remote-A HTML template
@@ -902,10 +903,26 @@ mf-with-webpack/
 └── README.md                   # This file
 ```
 
+## Configuration Updates
+
+### Updating Last Modified Date
+
+Before each build or deployment, update the last modified date in `host/src/config.ts`:
+
+```typescript
+export const APP_CONFIG = {
+  lastUpdated: '2025-12-07 07:17 PM'  // Update this before each build
+};
+```
+
+This date will be displayed in the footer alongside the current date.
+
 ## Additional Resources
 
 - [Webpack Module Federation](https://webpack.js.org/concepts/module-federation/)
 - [Module Federation Examples](https://github.com/module-federation/module-federation-examples)
 - [Webpack 5 Documentation](https://webpack.js.org/)
 - [TypeScript Handbook](https://www.typescriptlang.org/docs/)
+
+
 

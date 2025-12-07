@@ -23,7 +23,6 @@ This is a **production-ready**, native (bare-metal) Webpack Module Federation ex
 - **Production Build**: Optimized, minified production builds
 - **CSS & Asset Support**: Style loader and asset module support
 - **CORS Configuration**: Cross-origin support on dev servers
-- **HMR**: Hot Module Replacement in development environment
 - **Shared Dependencies**: Pre-configured structure for shared dependencies
 
 ## Prerequisites
@@ -152,8 +151,19 @@ This project is configured for easy deployment to GitHub Pages with all Module F
 
 1. GitHub repository with push access
 2. gh-pages package installed (already in devDependencies)
+3. GitHub Pages enabled in repository settings (Settings → Pages → Source: gh-pages branch)
 
-### Deployment Steps
+### Quick Deploy
+
+The simplest way to deploy:
+
+```bash
+pnpm run deploy
+```
+
+This single command will build and deploy everything to GitHub Pages.
+
+### Detailed Deployment Steps
 
 **Step 1: Install dependencies (if not already done)**
 ```bash
@@ -165,27 +175,78 @@ pnpm install
 pnpm run gitbuild
 ```
 
-This command:
-- Builds all applications in production mode
-- Sets correct `publicPath` for GitHub Pages
-- Configures all remote URLs to GitHub Pages locations
-- Creates a root `index.html` that redirects to the host app
-- Adds `.nojekyll` file to prevent Jekyll processing
+This command does three things:
+
+1. **Builds all applications** in production mode with environment variables:
+   - `NODE_ENV=production` - Enables production optimizations (minification, tree-shaking)
+   - `REMOTE_A_URL=https://lkovari.github.io/mf-with-webpack/remote-a` - Remote-A location
+   - `REMOTE_B_URL=https://lkovari.github.io/mf-with-webpack/remote-b` - Remote-B location
+   - `COMMON_LIB_URL=https://lkovari.github.io/mf-with-webpack/lk-common-lib` - Common library location
+
+2. **Configures webpack publicPath** for each application (defined in webpack configs):
+   - Host: `/mf-with-webpack/host/`
+   - Remote-A: `/mf-with-webpack/remote-a/`
+   - Remote-B: `/mf-with-webpack/remote-b/`
+   - Common-Lib: `/mf-with-webpack/lk-common-lib/`
+
+3. **Runs organize-gh-pages.js** script (see below for details)
 
 **Step 3: Deploy to GitHub Pages**
 ```bash
 pnpm run gitdeploy
 ```
 
-Or use the shortcut:
-```bash
-pnpm run deploy
-```
-
 This command:
-- Runs the build process
-- Deploys the `dist` folder to the `gh-pages` branch
-- Publishes to `https://your-username.github.io/mf-with-webpack/`
+- Executes `gitbuild` (if not already done)
+- Deploys the `dist` folder to the `gh-pages` branch using the `gh-pages` package
+- Includes dotfiles (like `.nojekyll`) with the `-t` flag
+- Publishes to `https://lkovari.github.io/mf-with-webpack/`
+
+### Why We Need organize-gh-pages.js
+
+The `scripts/organize-gh-pages.js` script is essential for GitHub Pages deployment. It performs two critical tasks:
+
+**1. Creates a Root Redirect Page**
+
+GitHub Pages serves the site from the root (`/mf-with-webpack/`), but our host app is in a subdirectory (`/mf-with-webpack/host/`). The script creates a root `index.html` that:
+- Automatically redirects visitors to the host app
+- Provides a fallback link if JavaScript is disabled
+- Shows a loading spinner for better UX
+
+Without this, visitors to `https://lkovari.github.io/mf-with-webpack/` would see a 404 error.
+
+**2. Creates .nojekyll File**
+
+GitHub Pages uses Jekyll by default, which:
+- Ignores files/folders starting with underscore (`_`)
+- Can interfere with webpack's generated files
+- May skip certain assets during deployment
+
+The `.nojekyll` file tells GitHub Pages to skip Jekyll processing and serve all files as-is. This is critical for Module Federation because:
+- Webpack may generate files with underscores
+- All generated assets must be served exactly as built
+- Module Federation's `remoteEntry.js` files must be accessible without Jekyll transformations
+
+**Without organize-gh-pages.js:**
+- Direct navigation to root URL would fail (404)
+- Jekyll might skip important webpack-generated files
+- Module Federation remotes might not load correctly
+
+**Execution Flow:**
+```
+pnpm run gitbuild
+  ↓
+pnpm run build:all:prod (builds all apps)
+  ↓
+pnpm run organize:gh-pages
+  ↓
+node scripts/organize-gh-pages.js
+  ↓
+- Creates dist/index.html (redirect page)
+- Creates dist/.nojekyll (disable Jekyll)
+  ↓
+Ready for deployment!
+```
 
 ### GitHub Pages URL Structure
 
@@ -199,50 +260,129 @@ https://lkovari.github.io/mf-with-webpack/remote-b/     → Remote-B (standalone
 https://lkovari.github.io/mf-with-webpack/lk-common-lib/ → Common library (standalone)
 ```
 
-### How It Works
+### How Module Federation Works on GitHub Pages
 
-The `gitbuild` script sets environment variables for production deployment:
+Module Federation requires precise URL configuration for remotes to load correctly across different environments.
 
-```bash
-NODE_ENV=production
-PUBLIC_PATH=/mf-with-webpack/
-REMOTE_A_URL=https://lkovari.github.io/mf-with-webpack/remote-a
-REMOTE_B_URL=https://lkovari.github.io/mf-with-webpack/remote-b
-COMMON_LIB_URL=https://lkovari.github.io/mf-with-webpack/lk-common-lib
+**Development vs Production URLs:**
+
+In development, all apps run on localhost with different ports:
+```
+Host:        http://localhost:8080
+Remote-A:    http://localhost:8081
+Remote-B:    http://localhost:8083
+Common-Lib:  http://localhost:8082
 ```
 
-The webpack configs use these variables to:
-1. Set correct `publicPath` for each application
-2. Configure Module Federation remotes to point to GitHub Pages URLs
-3. Ensure all assets load correctly from the GitHub Pages domain
+On GitHub Pages, all apps are in subdirectories:
+```
+Host:        https://lkovari.github.io/mf-with-webpack/host/
+Remote-A:    https://lkovari.github.io/mf-with-webpack/remote-a/
+Remote-B:    https://lkovari.github.io/mf-with-webpack/remote-b/
+Common-Lib:  https://lkovari.github.io/mf-with-webpack/lk-common-lib/
+```
 
-### Customization
+**The Build Process:**
+
+1. **Environment Variables** tell the host where to find remotes:
+   ```bash
+   REMOTE_A_URL=https://lkovari.github.io/mf-with-webpack/remote-a
+   REMOTE_B_URL=https://lkovari.github.io/mf-with-webpack/remote-b
+   COMMON_LIB_URL=https://lkovari.github.io/mf-with-webpack/lk-common-lib
+   ```
+
+2. **Webpack configs** use these to configure Module Federation:
+   ```javascript
+   remotes: {
+     remoteApp: `remoteApp@${REMOTE_A_URL}/remoteEntry.js`,
+     remoteBApp: `remoteBApp@${REMOTE_B_URL}/remoteEntry.js`,
+     commonLib: `commonLib@${COMMON_LIB_URL}/remoteEntry.js`
+   }
+   ```
+
+3. **publicPath** in each webpack config ensures assets load from the correct location:
+   - Each app knows its own subdirectory
+   - All bundles, CSS, and assets use absolute paths
+   - Module Federation can fetch remote modules correctly
+
+**Result:** The host app at `/mf-with-webpack/host/` can dynamically load:
+- Remote-A from `/mf-with-webpack/remote-a/remoteEntry.js`
+- Remote-B from `/mf-with-webpack/remote-b/remoteEntry.js`
+- Common-Lib from `/mf-with-webpack/lk-common-lib/remoteEntry.js`
+
+All without CORS issues or 404 errors!
+
+### Customization for Your Repository
 
 If you fork this repository or use a different repository name, update the URLs in `package.json`:
 
 ```json
 {
   "scripts": {
-    "gitbuild": "NODE_ENV=production PUBLIC_PATH=/your-repo-name/ REMOTE_A_URL=https://your-username.github.io/your-repo-name/remote-a REMOTE_B_URL=https://your-username.github.io/your-repo-name/remote-b COMMON_LIB_URL=https://your-username.github.io/your-repo-name/lk-common-lib pnpm run build:all:prod && pnpm run organize:gh-pages"
+    "gitbuild": "NODE_ENV=production REMOTE_A_URL=https://YOUR-USERNAME.github.io/YOUR-REPO-NAME/remote-a REMOTE_B_URL=https://YOUR-USERNAME.github.io/YOUR-REPO-NAME/remote-b COMMON_LIB_URL=https://YOUR-USERNAME.github.io/YOUR-REPO-NAME/lk-common-lib pnpm run build:all:prod && pnpm run organize:gh-pages"
   }
 }
+```
+
+Replace:
+- `YOUR-USERNAME` with your GitHub username
+- `YOUR-REPO-NAME` with your repository name
+
+Also update the `publicPath` in each webpack config to match your repository name:
+
+**webpack.host.config.cjs:**
+```javascript
+const publicPath = process.env.PUBLIC_PATH || (isProduction ? '/YOUR-REPO-NAME/host/' : 'http://localhost:8080/');
+```
+
+**webpack.remote.config.cjs:**
+```javascript
+const publicPath = process.env.PUBLIC_PATH || (isProduction ? '/YOUR-REPO-NAME/remote-a/' : 'http://localhost:8081/');
+```
+
+**webpack.remote-b.config.cjs:**
+```javascript
+const publicPath = process.env.PUBLIC_PATH || (isProduction ? '/YOUR-REPO-NAME/remote-b/' : 'http://localhost:8083/');
+```
+
+**webpack.common-lib.config.cjs:**
+```javascript
+const publicPath = process.env.PUBLIC_PATH || (isProduction ? '/YOUR-REPO-NAME/lk-common-lib/' : 'http://localhost:8082/');
 ```
 
 ### Troubleshooting
 
 **404 errors after deployment:**
-- Ensure GitHub Pages is enabled in repository settings
-- Check that the source is set to `gh-pages` branch
-- Wait a few minutes for GitHub Pages to process the deployment
+- Ensure GitHub Pages is enabled in repository settings (Settings → Pages)
+- Check that the source is set to `gh-pages` branch (root directory)
+- Wait 2-3 minutes for GitHub Pages to process the deployment
+- Clear browser cache with hard refresh (Cmd+Shift+R or Ctrl+Shift+R)
 
-**Module Federation not loading remotes:**
-- Verify all URLs in the `gitbuild` script match your GitHub Pages URL
+**Module Federation remotes not loading:**
+- Verify all URLs in the `gitbuild` script match your GitHub Pages URL structure
 - Check browser console for CORS or 404 errors
-- Ensure `.nojekyll` file is present in the dist folder
+- Ensure `.nojekyll` file exists in the deployed dist folder
+- Verify each `remoteEntry.js` file is accessible:
+  - `https://lkovari.github.io/mf-with-webpack/remote-a/remoteEntry.js`
+  - `https://lkovari.github.io/mf-with-webpack/remote-b/remoteEntry.js`
+  - `https://lkovari.github.io/mf-with-webpack/lk-common-lib/remoteEntry.js`
 
-**Assets not loading:**
-- Verify `publicPath` in webpack configs matches your repository structure
+**Assets (bundle.js, CSS) not loading:**
+- Verify `publicPath` in each webpack config matches your repository structure
 - Check that all applications have the correct base path
+- Ensure paths are using relative references (e.g., `./README.md` not `/README.md`)
+- Inspect the built `bundle.js` to verify asset paths are correct
+
+**README not displaying:**
+- Ensure `CopyWebpackPlugin` is copying `README.md` to `dist/host/`
+- Verify the fetch path in `host/src/readme-content.ts` uses `'./README.md'` (relative)
+- Check browser console for fetch errors
+
+**Page shows blank/white screen:**
+- Open browser DevTools Console to see JavaScript errors
+- Verify the root `index.html` redirect is working
+- Check that all Module Federation remotes loaded successfully
+- Ensure the host app's `bundle.js` loaded without errors
 
 ## Configuration
 
@@ -592,6 +732,67 @@ Open Browser DevTools → Network tab:
 - **Optimal caching** - Each module cached separately
 - **Scalable** - Add more remotes without impacting initial load
 
+## Hot Module Replacement (HMR)
+
+This project has **Hot Module Replacement** enabled in development mode for all applications (host, remotes, and common library):
+
+### How It Works
+
+1. **File Change Detection**: Webpack dev server watches for file changes
+2. **Module Update**: Only the changed module is recompiled
+3. **Live Injection**: Updated module is injected into the running app without full page reload
+4. **State Preservation**: Application state is maintained across updates
+
+### Configuration
+
+HMR is configured in each webpack config file's dev server settings:
+
+```javascript
+devServer: {
+  port: 8080,
+  hot: true,  // Enables HMR
+  historyApiFallback: true,
+  headers: {
+    'Access-Control-Allow-Origin': '*'
+  }
+}
+```
+
+### What Updates Without Reload
+
+**CSS Changes:**
+- Style updates appear instantly
+- No page reload required
+- All application state preserved
+
+**TypeScript/JavaScript Changes:**
+- Module re-executes with new code
+- Dependent modules also update
+- Faster feedback loop
+
+### Example Workflow
+
+1. Start dev server: `pnpm run serve:all`
+2. Open `http://localhost:8080` in browser
+3. Edit `host/src/styles.css` - change a color
+4. **Save file** → color updates in 1-2 seconds without reload
+5. Edit `host/src/index.ts` - change some logic
+6. **Save file** → changes appear immediately
+
+### Benefits
+
+- **Faster Development** - See changes in 1-2 seconds instead of 5-10 seconds
+- **Preserved State** - No need to re-navigate or re-enter test data
+- **Better DX** - Stay in the flow, instant feedback on changes
+- **Precise Updates** - Only changed modules reload, not the entire app
+
+### Verification
+
+Open Browser DevTools → Console:
+- Look for `[webpack-dev-server] Hot Module Replacement enabled.` message
+- After saving a file, you'll see `[webpack-dev-server] App updated. Recompiling...`
+- No full page reload indicator in the Network tab
+
 ## CSS and Asset Support
 
 ### Using CSS
@@ -701,72 +902,6 @@ mf-with-webpack/
 └── README.md                   # This file
 ```
 
-## Next Steps
-
-### Suggested Enhancements
-
-1. **Add Shared Dependencies**
-   - Add common libraries (e.g., lodash, date-fns)
-   - Configure shared webpack settings
-
-3. **Improve Type Safety**
-   - Generate type definitions for exposed modules
-   - Use @module-federation/typescript
-
-4. **E2E Tests**
-   - Playwright or Cypress tests
-   - Test module federation scenarios
-
-5. **CI/CD Pipeline**
-   - GitHub Actions or GitLab CI
-   - Automated build and deploy
-
-6. **Environment Files**
-   - `.env`, `.env.production` files
-   - Use dotenv-webpack plugin
-
-7. **Monitoring and Logging**
-   - Sentry integration for remote loading errors
-   - Analytics for module usage
-
-## Troubleshooting
-
-### Remote Not Loading
-
-**Problem**: "Failed to load remote module" error message
-
-**Solutions**:
-1. Check if the remote server is running: `http://localhost:8081`
-2. Check the browser console for detailed error messages
-3. Verify the `REMOTE_A_URL` environment variable
-4. Check the Network tab in DevTools
-
-### CORS Errors
-
-**Problem**: CORS policy blocks remote loading
-
-**Solution**:
-- The dev server already includes CORS headers
-- In production environment, configure your web server's CORS policy
-
-### TypeScript Errors
-
-**Problem**: Type errors during import
-
-**Solution**:
-1. Check the `declarations.d.ts` file
-2. Update type definitions if the remote API changes
-3. Run: `pnpm run build:remote` to verify types
-
-### Build Failed
-
-**Problem**: Webpack build error
-
-**Solution**:
-1. Delete the `dist/` folder: `rm -rf dist/`
-2. Delete `node_modules/` folder and reinstall
-3. Check webpack config syntax
-
 ## Additional Resources
 
 - [Webpack Module Federation](https://webpack.js.org/concepts/module-federation/)
@@ -777,10 +912,6 @@ mf-with-webpack/
 ## License
 
 MIT License - see the LICENSE file for details.
-
-## Contributing
-
-If you find a bug or have an enhancement idea, feel free to open an issue or pull request!
 
 ---
 

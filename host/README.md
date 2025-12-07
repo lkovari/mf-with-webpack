@@ -909,10 +909,3 @@ mf-with-webpack/
 - [Webpack 5 Documentation](https://webpack.js.org/)
 - [TypeScript Handbook](https://www.typescriptlang.org/docs/)
 
-## License
-
-MIT License - see the LICENSE file for details.
-
----
-
-**Built for production-ready micro-frontend development**

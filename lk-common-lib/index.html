@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Common Library - Standalone</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 1rem;
+        background: #f9fafb;
+      }
+      .card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-bottom: 1rem;
+      }
+      h1 { color: #1f2937; }
+      h2 { color: #4b5563; font-size: 1.2rem; }
+      code {
+        background: #f3f4f6;
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        font-size: 0.9rem;
+      }
+      .demo-btn {
+        background: #3b82f6;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-right: 0.5rem;
+      }
+      .demo-btn:hover {
+        background: #2563eb;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>LK Common Library (Standalone Mode)</h1>
+    
+    <div class="card">
+      <h2>About</h2>
+      <p>This is the common library running in standalone mode for testing and development.</p>
+      <p>Port: <strong>8082</strong></p>
+    </div>
+
+    <div class="card">
+      <h2>Exported Modules</h2>
+      <ul>
+        <li><code>./utils</code> - Utility functions (formatDate, capitalize, logger, etc.)</li>
+        <li><code>./constants</code> - Shared constants (COLORS, API_ENDPOINTS, etc.)</li>
+        <li><code>./types</code> - TypeScript type definitions</li>
+        <li><code>./index</code> - All exports combined</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>Demo</h2>
+      <button class="demo-btn" id="demo-logger">Test Logger</button>
+      <button class="demo-btn" id="demo-format">Format Date</button>
+      <button class="demo-btn" id="demo-colors">Show Colors</button>
+      <div id="demo-output" style="margin-top: 1rem;"></div>
+    </div>
+
+    <div id="lib-root"></div>
+  </body>
+</html>
+

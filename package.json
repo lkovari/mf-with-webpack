@@ -1,0 +1,43 @@
+{
+  "name": "mf-demo-ts-html",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "scripts": {
+    "build:host": "webpack --config webpack.host.config.cjs",
+    "build:remote-a": "webpack --config webpack.remote.config.cjs",
+    "build:remote-b": "webpack --config webpack.remote-b.config.cjs",
+    "build:lib": "webpack --config webpack.common-lib.config.cjs",
+    "build:host:prod": "NODE_ENV=production webpack --config webpack.host.config.cjs",
+    "build:remote-a:prod": "NODE_ENV=production webpack --config webpack.remote.config.cjs",
+    "build:remote-b:prod": "NODE_ENV=production webpack --config webpack.remote-b.config.cjs",
+    "build:lib:prod": "NODE_ENV=production webpack --config webpack.common-lib.config.cjs",
+    "build:all": "pnpm run build:lib && pnpm run build:remote-a && pnpm run build:remote-b && pnpm run build:host",
+    "build:all:prod": "pnpm run build:lib:prod && pnpm run build:remote-a:prod && pnpm run build:remote-b:prod && pnpm run build:host:prod",
+    "serve:host": "webpack serve --config webpack.host.config.cjs --port 8080",
+    "serve:remote-a": "webpack serve --config webpack.remote.config.cjs --port 8081",
+    "serve:remote-b": "webpack serve --config webpack.remote-b.config.cjs --port 8083",
+    "serve:lib": "webpack serve --config webpack.common-lib.config.cjs --port 8082",
+    "serve:all": "pnpm run serve:lib & pnpm run serve:remote-a & pnpm run serve:remote-b & pnpm run serve:host",
+    "gitbuild": "NODE_ENV=production REMOTE_A_URL=https://lkovari.github.io/mf-with-webpack/remote-a REMOTE_B_URL=https://lkovari.github.io/mf-with-webpack/remote-b COMMON_LIB_URL=https://lkovari.github.io/mf-with-webpack/lk-common-lib pnpm run build:all:prod && pnpm run organize:gh-pages",
+    "organize:gh-pages": "node scripts/organize-gh-pages.js",
+    "gitdeploy": "pnpm run gitbuild && gh-pages -d dist -t",
+    "deploy": "pnpm run gitdeploy"
+  },
+  "devDependencies": {
+    "copy-webpack-plugin": "^12.0.2",
+    "css-loader": "^7.1.2",
+    "gh-pages": "^6.3.0",
+    "html-webpack-plugin": "^5.6.0",
+    "style-loader": "^4.0.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.6.0",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^5.0.4"
+  }
+}

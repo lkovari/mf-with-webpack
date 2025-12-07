@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "lib": ["DOM", "ES2017"],
+    "strict": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "outDir": "./dist"
+  },
+  "include": [
+    "host/src/**/*",
+    "remote-a/src/**/*",
+    "remote-b/src/**/*",
+    "lk-common-lib/src/**/*",
+    "declarations.d.ts"
+  ]
+}

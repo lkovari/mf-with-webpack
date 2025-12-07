@@ -917,6 +917,182 @@ export const APP_CONFIG = {
 
 This date will be displayed in the footer alongside the current date.
 
+## Micro-Frontend Benefits
+
+This project demonstrates a **true micro-frontend architecture** using Webpack Module Federation. Each application (host, remotes, and common library) can be built and deployed independently, providing significant benefits for large-scale applications.
+
+### Independent Builds
+
+Each application has its own webpack configuration and can be built separately:
+
+- **Host**: `webpack.host.config.cjs` → builds to `dist/host/`
+- **Remote-A**: `webpack.remote.config.cjs` → builds to `dist/remote-a/`
+- **Remote-B**: `webpack.remote-b.config.cjs` → builds to `dist/remote-b/`
+- **Common Library**: `webpack.common-lib.config.cjs` → builds to `dist/lk-common-lib/`
+
+Each build is completely independent - you can build one app without building the others.
+
+### Independent Deployment
+
+Applications can be deployed to different servers, CDNs, or environments:
+
+**Example Deployment Architecture:**
+```
+Common Library → https://cdn.example.com/common-lib/
+Remote-A       → https://app-a.example.com/
+Remote-B       → https://app-b.example.com/
+Host           → https://myapp.example.com/
+```
+
+The host application uses environment variables to configure remote URLs, allowing flexible deployment strategies.
+
+### Runtime Integration
+
+Applications communicate at **runtime** via Module Federation, not at build time:
+
+- Host dynamically loads remotes using `await import('remoteApp/remoteApi')`
+- Remotes can be updated and redeployed without rebuilding the host
+- Different versions of remotes can be tested independently
+- A/B testing different remote versions is possible
+
+### Standalone Execution
+
+Each application can run independently for development and testing:
+
+- **Host**: `http://localhost:8080` - Full application with all remotes
+- **Remote-A**: `http://localhost:8081` - Standalone remote application
+- **Remote-B**: `http://localhost:8083` - Standalone remote application
+- **Common Library**: `http://localhost:8082` - Standalone library demo
+
+This allows teams to develop and test their micro-frontends in isolation.
+
+### Environment-Based Configuration
+
+Remote URLs are configurable via environment variables, enabling different configurations for development, staging, and production:
+
+```bash
+# Development
+REMOTE_A_URL=http://localhost:8081 pnpm run serve:host
+
+# Staging
+REMOTE_A_URL=https://staging-app-a.example.com pnpm run build:host:prod
+
+# Production
+REMOTE_A_URL=https://app-a.example.com pnpm run build:host:prod
+```
+
+### Team Autonomy
+
+Different teams can:
+- Work on separate remotes independently
+- Deploy their remotes on their own schedule
+- Use different technologies (if needed)
+- Maintain separate codebases and repositories
+- Have independent CI/CD pipelines
+
+### Graceful Degradation
+
+The architecture includes error handling and fallback mechanisms:
+- Applications work even if remotes are temporarily unavailable
+- User-friendly error messages when remotes fail to load
+- Fallback UI when dependencies are missing
+
+### Shared Dependencies
+
+The common library (`lk-common-lib`) is shared across all applications:
+- Prevents code duplication
+- Ensures consistent utilities and types
+- Loads once and is reused (singleton pattern)
+- Can be versioned independently
+
+### Independent Deployment Guide
+
+#### Using Deployment Scripts
+
+The project includes deployment scripts in the `scripts/` directory:
+
+**1. Deploy Common Library (should be deployed first):**
+```bash
+chmod +x scripts/deploy-common-lib.sh
+./scripts/deploy-common-lib.sh "/common-lib/" "https://cdn.example.com/common-lib"
+```
+
+**2. Deploy Remote-A:**
+```bash
+chmod +x scripts/deploy-remote-a.sh
+./scripts/deploy-remote-a.sh "/remote-a/" "https://cdn.example.com/common-lib" "https://app-a.example.com"
+```
+
+**3. Deploy Remote-B:**
+```bash
+chmod +x scripts/deploy-remote-b.sh
+./scripts/deploy-remote-b.sh "/remote-b/" "https://cdn.example.com/common-lib" "https://app-b.example.com"
+```
+
+**4. Deploy Host (after all remotes are deployed):**
+```bash
+chmod +x scripts/deploy-host.sh
+./scripts/deploy-host.sh "/host/" "https://app-a.example.com" "https://app-b.example.com" "https://cdn.example.com/common-lib"
+```
+
+#### Manual Deployment
+
+**Build Common Library:**
+```bash
+NODE_ENV=production PUBLIC_PATH=https://cdn.example.com/common-lib/ \
+  pnpm run build:lib:prod
+# Deploy dist/lk-common-lib/ to your CDN/server
+```
+
+**Build Remote-A:**
+```bash
+NODE_ENV=production \
+  COMMON_LIB_URL=https://cdn.example.com/common-lib \
+  PUBLIC_PATH=https://app-a.example.com/ \
+  pnpm run build:remote-a:prod
+# Deploy dist/remote-a/ to https://app-a.example.com/
+```
+
+**Build Remote-B:**
+```bash
+NODE_ENV=production \
+  COMMON_LIB_URL=https://cdn.example.com/common-lib \
+  PUBLIC_PATH=https://app-b.example.com/ \
+  pnpm run build:remote-b:prod
+# Deploy dist/remote-b/ to https://app-b.example.com/
+```
+
+**Build Host:**
+```bash
+NODE_ENV=production \
+  REMOTE_A_URL=https://app-a.example.com \
+  REMOTE_B_URL=https://app-b.example.com \
+  COMMON_LIB_URL=https://cdn.example.com/common-lib \
+  PUBLIC_PATH=https://myapp.example.com/ \
+  pnpm run build:host:prod
+# Deploy dist/host/ to https://myapp.example.com/
+```
+
+### Deployment Order
+
+1. **Common Library** - Deploy first (dependency for other apps)
+2. **Remote-A** - Deploy independently
+3. **Remote-B** - Deploy independently
+4. **Host** - Deploy last (depends on all remotes being available)
+
+### Benefits Summary
+
+| Benefit | Description |
+|---------|-------------|
+| **Independent Builds** | Each app builds separately, no build-time coupling |
+| **Independent Deployment** | Deploy apps to different servers/CDNs |
+| **Runtime Integration** | Apps connect at runtime, not build time |
+| **Team Autonomy** | Teams can work and deploy independently |
+| **Technology Flexibility** | Different remotes can use different tech stacks |
+| **Version Management** | Test and deploy different remote versions |
+| **Faster Development** | Teams don't block each other |
+| **Scalability** | Add new remotes without rebuilding existing ones |
+
 ## Additional Resources
 
 - [Webpack Module Federation](https://webpack.js.org/concepts/module-federation/)

@@ -23,7 +23,6 @@ This is a **production-ready**, native (bare-metal) Webpack Module Federation ex
 - **Production Build**: Optimized, minified production builds
 - **CSS & Asset Support**: Style loader and asset module support
 - **CORS Configuration**: Cross-origin support on dev servers
-- **HMR**: Hot Module Replacement in development environment
 - **Shared Dependencies**: Pre-configured structure for shared dependencies
 
 ## Prerequisites
@@ -733,6 +732,67 @@ Open Browser DevTools → Network tab:
 - **Optimal caching** - Each module cached separately
 - **Scalable** - Add more remotes without impacting initial load
 
+## Hot Module Replacement (HMR)
+
+This project has **Hot Module Replacement** enabled in development mode for all applications (host, remotes, and common library):
+
+### How It Works
+
+1. **File Change Detection**: Webpack dev server watches for file changes
+2. **Module Update**: Only the changed module is recompiled
+3. **Live Injection**: Updated module is injected into the running app without full page reload
+4. **State Preservation**: Application state is maintained across updates
+
+### Configuration
+
+HMR is configured in each webpack config file's dev server settings:
+
+```javascript
+devServer: {
+  port: 8080,
+  hot: true,  // Enables HMR
+  historyApiFallback: true,
+  headers: {
+    'Access-Control-Allow-Origin': '*'
+  }
+}
+```
+
+### What Updates Without Reload
+
+**CSS Changes:**
+- Style updates appear instantly
+- No page reload required
+- All application state preserved
+
+**TypeScript/JavaScript Changes:**
+- Module re-executes with new code
+- Dependent modules also update
+- Faster feedback loop
+
+### Example Workflow
+
+1. Start dev server: `pnpm run serve:all`
+2. Open `http://localhost:8080` in browser
+3. Edit `host/src/styles.css` - change a color
+4. **Save file** → color updates in 1-2 seconds without reload
+5. Edit `host/src/index.ts` - change some logic
+6. **Save file** → changes appear immediately
+
+### Benefits
+
+- **Faster Development** - See changes in 1-2 seconds instead of 5-10 seconds
+- **Preserved State** - No need to re-navigate or re-enter test data
+- **Better DX** - Stay in the flow, instant feedback on changes
+- **Precise Updates** - Only changed modules reload, not the entire app
+
+### Verification
+
+Open Browser DevTools → Console:
+- Look for `[webpack-dev-server] Hot Module Replacement enabled.` message
+- After saving a file, you'll see `[webpack-dev-server] App updated. Recompiling...`
+- No full page reload indicator in the Network tab
+
 ## CSS and Asset Support
 
 ### Using CSS
@@ -842,72 +902,6 @@ mf-with-webpack/
 └── README.md                   # This file
 ```
 
-## Next Steps
-
-### Suggested Enhancements
-
-1. **Add Shared Dependencies**
-   - Add common libraries (e.g., lodash, date-fns)
-   - Configure shared webpack settings
-
-3. **Improve Type Safety**
-   - Generate type definitions for exposed modules
-   - Use @module-federation/typescript
-
-4. **E2E Tests**
-   - Playwright or Cypress tests
-   - Test module federation scenarios
-
-5. **CI/CD Pipeline**
-   - GitHub Actions or GitLab CI
-   - Automated build and deploy
-
-6. **Environment Files**
-   - `.env`, `.env.production` files
-   - Use dotenv-webpack plugin
-
-7. **Monitoring and Logging**
-   - Sentry integration for remote loading errors
-   - Analytics for module usage
-
-## Troubleshooting
-
-### Remote Not Loading
-
-**Problem**: "Failed to load remote module" error message
-
-**Solutions**:
-1. Check if the remote server is running: `http://localhost:8081`
-2. Check the browser console for detailed error messages
-3. Verify the `REMOTE_A_URL` environment variable
-4. Check the Network tab in DevTools
-
-### CORS Errors
-
-**Problem**: CORS policy blocks remote loading
-
-**Solution**:
-- The dev server already includes CORS headers
-- In production environment, configure your web server's CORS policy
-
-### TypeScript Errors
-
-**Problem**: Type errors during import
-
-**Solution**:
-1. Check the `declarations.d.ts` file
-2. Update type definitions if the remote API changes
-3. Run: `pnpm run build:remote` to verify types
-
-### Build Failed
-
-**Problem**: Webpack build error
-
-**Solution**:
-1. Delete the `dist/` folder: `rm -rf dist/`
-2. Delete `node_modules/` folder and reinstall
-3. Check webpack config syntax
-
 ## Additional Resources
 
 - [Webpack Module Federation](https://webpack.js.org/concepts/module-federation/)
@@ -918,10 +912,6 @@ mf-with-webpack/
 ## License
 
 MIT License - see the LICENSE file for details.
-
-## Contributing
-
-If you find a bug or have an enhancement idea, feel free to open an issue or pull request!
 
 ---
 

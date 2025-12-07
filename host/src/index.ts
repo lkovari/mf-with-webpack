@@ -2,6 +2,7 @@
 import './styles.css';
 import { createMainLayout, getContentArea, getFooter } from './main-layout';
 import { loadReadmeContent } from './readme-content';
+import { APP_CONFIG } from './config';
 
 /**
  * Bootstrap function - Entry point of the host application
@@ -38,11 +39,11 @@ async function initializeFooter(): Promise<void> {
     const { formatDate } = await import('commonLib/index');
     
     const currentDate = formatDate(new Date());
-    footer.innerHTML = `Last update: ${currentDate}`;
+    footer.innerHTML = `Last updated: ${APP_CONFIG.lastUpdated} | Today: ${currentDate}`;
   } catch (error) {
     // Graceful fallback if the remote is unavailable
     console.error('Failed to load date in footer:', error);
-    footer.innerHTML = `Last update: ${new Date().toLocaleDateString()}`;
+    footer.innerHTML = `Last updated: ${APP_CONFIG.lastUpdated} | Today: ${new Date().toLocaleDateString()}`;
   }
 }
 
